@@ -533,43 +533,39 @@ private fun LogbookSection(rule: AlertRule, onChange: ((ReminderSpec) -> Reminde
             runCatching { if (Applic.Nativesloaded) NativeLabels.read() else LabelConfig() }.getOrDefault(LabelConfig())
         }
     }
+    // ReminderSpec stores native label indexes, so offer the native catalog directly. Inferring
+    // the choices from log types omitted labels assigned to another role and made the visible
+    // choice list differ from the indexes written by Natives.saveNum.
+    val validLabel = spec.logLabel.takeIf { it in labels.labels.indices } ?: -1
     val noneLabel = stringResource(R.string.loc_reminder_log_none)
     fun typeName(label: Int): String = when (label) {
         -1 -> noneLabel
         else -> labels.nameOf(label).ifBlank { "#$label" }
     }
-    val unit = when (labels.typeOf(spec.logLabel).takeIf { spec.logLabel >= 0 }) {
+    val unit = when (labels.typeOf(validLabel).takeIf { validLabel >= 0 }) {
         LogType.RAPID_INSULIN, LogType.BASAL_INSULIN -> context.getString(R.string.unit_insulin_short)
         LogType.CARBS -> context.getString(R.string.unit_carbs_short)
         else -> null
     }
     val amountText = formatAmount(spec.logAmount)
     val entryText = if (spec.logAmount > 0f) {
-        listOfNotNull(amountText, unit).joinToString(" ") + " " + typeName(spec.logLabel)
+        listOfNotNull(amountText, unit).joinToString(" ") + " " + typeName(validLabel)
     } else {
-        typeName(spec.logLabel)
+        typeName(validLabel)
     }
 
     SettingsSection(title = stringResource(R.string.loc_reminder_logbook_section)) {
-        // The insulin and carbs labels first, then any other label (the old reminders could use any).
-        val options = buildList {
-            add(-1)
-            listOf(LogType.BASAL_INSULIN, LogType.RAPID_INSULIN, LogType.CARBS)
-                .map(labels::labelFor)
-                .filterTo(this) { it >= 0 }
-            labels.customLabels.mapTo(this) { it.index }
-            if (spec.logLabel !in this) add(spec.logLabel)
-        }.distinct()
+        val options = listOf(-1) + labels.labels.map { it.index }
         ChoiceRow(
             title = stringResource(R.string.loc_reminder_log_type),
             subtitle = stringResource(R.string.loc_reminder_log_type_desc),
             icon = Icons.AutoMirrored.Filled.MenuBook,
             options = options,
-            selected = spec.logLabel,
+            selected = validLabel,
             label = { typeName(it) },
             onSelect = { label -> onChange { it.copy(logLabel = label) } }
         )
-        if (spec.isLinked) {
+        if (validLabel >= 0) {
             ReminderTextRow(
                 key = rule.id + spec.logLabel,
                 icon = Icons.Default.Scale,

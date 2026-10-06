@@ -346,7 +346,7 @@ object Reminders {
      */
     private fun alreadyLogged(rule: AlertRule, due: Long): Boolean {
         val spec = rule.reminder
-        if (!spec.isLinked || spec.lookBackMinutes <= 0) return false
+        if (!spec.isLinked || spec.lookBackMinutes <= 0 || !hasNativeLabel(spec.logLabel)) return false
         var since = due - spec.lookBackMinutes * 60_000L
         spec.latestBetween(since, due - 1, rule.schedule.days)?.let { previous -> since = maxOf(since, (previous + due) / 2) }
         return loggedSince(spec.logLabel, spec.logAmount, since)
@@ -373,7 +373,7 @@ object Reminders {
     /** Adds the confirmed dose to this device's logbook. */
     private fun logDose(rule: AlertRule, time: Long) {
         val spec = rule.reminder
-        if (!spec.logWhenTaken || !spec.isLinked || spec.logAmount <= 0f || !Applic.Nativesloaded) return
+        if (!spec.logWhenTaken || !spec.isLinked || spec.logAmount <= 0f || !hasNativeLabel(spec.logLabel)) return
         val ptr = numio.numptrs.getOrNull(1)?.takeIf { it != 0L } ?: return
         try {
             Natives.saveNum(ptr, time / 1000L, spec.logAmount, spec.logLabel, 0)
@@ -382,5 +382,11 @@ object Reminders {
         } catch (th: Throwable) {
             Log.stack(LOG_ID, "logDose", th)
         }
+    }
+
+    /** Reminder settings store native label indexes; reject stale indexes after labels change. */
+    private fun hasNativeLabel(label: Int): Boolean {
+        if (label < 0 || !Applic.Nativesloaded) return false
+        return runCatching { label < (Natives.getLabels()?.size ?: 0) - 1 }.getOrDefault(false)
     }
 }
