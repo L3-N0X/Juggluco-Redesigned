@@ -73,12 +73,9 @@ fun WearGlucoseHero(
             }
         } else null
     }
-    // Time elapsed string. The elapsed minutes are remembered, the wording comes from resources.
-    val minutesAgo = remember(currentReading?.timestamp) {
-        val ts = currentReading?.timestamp ?: return@remember -1
-        val elapsed = (System.currentTimeMillis() - ts).coerceAtLeast(0L)
-        (elapsed / 60_000L).toInt()
-    }
+    // One clock for the whole card, so the age and the strike-through cannot drift apart.
+    val age = rememberReadingAge(currentReading?.timestamp)
+    val minutesAgo = age.minutes
     val justNowLabel = stringResource(R.string.wear_ui_just_now)
     val timeAgo = when {
         minutesAgo < 0 -> "--"
@@ -88,7 +85,7 @@ fun WearGlucoseHero(
     }
 
     // No new reading: the last one stays, greyed and struck through, without arrow or change.
-    val isStale = rememberIsStale(currentReading?.timestamp)
+    val isStale = age.isStale
 
     Column(
         modifier = modifier

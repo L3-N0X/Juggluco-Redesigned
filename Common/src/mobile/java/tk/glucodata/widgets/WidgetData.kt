@@ -4,6 +4,7 @@ import android.content.Context
 import tk.glucodata.Applic
 import tk.glucodata.Natives
 import tk.glucodata.Notify
+import tk.glucodata.StaleReading
 import tk.glucodata.ui.data.NativeHistory
 import tk.glucodata.ui.model.DeltaCalculation
 import tk.glucodata.ui.model.GlucosePoint
@@ -44,7 +45,7 @@ class WidgetSnapshot(
     val range: GlucoseRange
 ) {
     val hasReading: Boolean get() = currentTime > 0L && currentMgDl > 0f
-    val isStale: Boolean get() = !hasReading || now - currentTime > Notify.glucosetimeout
+    val isStale: Boolean get() = StaleReading.isStale(if (hasReading) currentTime else null, now)
 
     /** A reading worth showing: current, or stale (shown struck through) but not older than [Notify.lastreadingshown]. */
     val hasRecentReading: Boolean get() = hasReading && now - currentTime <= Notify.lastreadingshown

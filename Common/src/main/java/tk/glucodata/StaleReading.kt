@@ -10,6 +10,18 @@ import kotlin.math.max
  * struck through, so the user still sees where they were while it never passes for a current value.
  */
 object StaleReading {
+    /**
+     * Whether the reading taken at [timestamp] (epoch milliseconds) can no longer be presented as
+     * the current one: there is none at all, or it has aged past [Notify.glucosetimeout].
+     *
+     * The one answer every surface goes by - the Compose hero cards, the widgets, the notification -
+     * and it is told the time instead of reading it, so a caller that already knows "now" stays the
+     * one deciding how old the reading is.
+     */
+    @JvmStatic
+    fun isStale(timestamp: Long?, now: Long): Boolean =
+        timestamp == null || now - timestamp > Notify.glucosetimeout
+
     /** Whether a reading [ageMillis] old is still worth showing struck through. */
     @JvmStatic
     fun shown(ageMillis: Long): Boolean = ageMillis <= Notify.lastreadingshown
