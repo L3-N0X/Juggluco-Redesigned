@@ -82,6 +82,11 @@
 
 ---
 
+## Stale Readings
+- **One rule, told the time:** a reading is current while there is one and it is younger than `Notify.glucosetimeout`; past that the last value stays, greyed and struck through (`StaleReading.isStale(timestamp, now)`), without arrow or change. Every surface goes by it: the Compose hero cards, the widgets, the notification.
+- **Compose derives, it never remembers the verdict:** `rememberReadingAge(timestamp)` (`ui/components/StaleReadingState.kt`) returns the minutes and the verdict off a clock that is itself keyed on the timestamp, and wakes itself at the next minute and at the aging-out deadline. Nothing may cache "is stale" in a `produceState`/`remember`: a key change restarts the producer but keeps its old value, so a verdict set once latched for the rest of the composition - a value that had aged out stayed struck through right next to a "just now" that did keep up. The clock is also what the "x min ago" line reads, so age and strike-through can never disagree.
+- **The drawn surfaces are computed, not cached:** the widget, the notification, the complications and the legacy float re-read `Natives.lastglucose()` on every event, so a new reading clears them by itself. Keep it that way - no cached strike-through state, no cached bitmap that outlives the reading it drew.
+
 ## Screen Layout & Headers
 - **Shared layout module:** `Common/src/main/java/tk/glucodata/ui/screens/ScreenLayout.kt` owns the spacing scale (`Gutter` / `CardPadding` 16.dp, `SectionSpacing`, `TopPadding`, `BottomPadding` 96.dp) plus `ScreenContent { }` (standard scrolling tab body) and `SectionTitle(...)`. Use these instead of ad-hoc dp values.
 - **One title per screen:** the persistent app bar supplies it — `JugglucoApp`'s `TopAppBar` for every tab, `SettingsDetailScaffold` for detail screens. Never repeat the page title in the content, and leave descriptions out unless they earn their space.

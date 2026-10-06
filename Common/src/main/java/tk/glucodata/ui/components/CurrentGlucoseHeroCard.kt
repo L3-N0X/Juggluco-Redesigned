@@ -71,17 +71,20 @@ fun CurrentGlucoseHeroCard(
         MaterialTheme.colorScheme.onSurfaceVariant
     }
 
+    // One clock for the whole card: the strike-through, the arrow and the age below all describe the
+    // same reading, and a new reading clears the strike-through on the frame it arrives.
+    val age = rememberReadingAge(currentReading?.timestamp)
+
     // No new reading: the last one stays, greyed and struck through, without arrow or change.
-    val isStale = rememberIsStale(currentReading?.timestamp) && currentReading != null
+    val isStale = age.isStale && currentReading != null
     val trendArrow = if (currentReading != null && !isStale) TrendArrow.fromRate(currentReading.rate) else TrendArrow.UNKNOWN
 
     // Calculate time elapsed
     val timeAgoText = if (currentReading != null) {
-        val diffMinutes = ((System.currentTimeMillis() - currentReading.timestamp) / (1000 * 60)).toInt()
         when {
-            diffMinutes <= 1 -> stringResource(R.string.just_now)
-            diffMinutes < 60 -> stringResource(R.string.min_ago, diffMinutes)
-            else -> stringResource(R.string.hours_min_ago, diffMinutes / 60, diffMinutes % 60)
+            age.minutes <= 1 -> stringResource(R.string.just_now)
+            age.minutes < 60 -> stringResource(R.string.min_ago, age.minutes)
+            else -> stringResource(R.string.hours_min_ago, age.minutes / 60, age.minutes % 60)
         }
     } else {
         stringResource(R.string.waiting_for_readings)
